@@ -14,8 +14,7 @@ unique_str: List[str] = []
 
 
 def process_file(f: IO[Any], fname: str, template_data: Dict[str, str]) -> None:
-    line = f.readline()
-    while line:
+    while line := f.readline():
         patterns = ['tr("']
         idx = 0
         pos = 0
@@ -41,8 +40,6 @@ def process_file(f: IO[Any], fname: str, template_data: Dict[str, str]) -> None:
                 template_data[msg.replace("\\n", "\n")] = ""
                 unique_str.append(msg)
 
-        line = f.readline()
-
 
 def main() -> None:
     if len(sys.argv) != 2:
@@ -50,7 +47,7 @@ def main() -> None:
 
     # Change to the directory where the script is located,
     # so that the script can be run from any location.
-    os.chdir(os.path.dirname(os.path.realpath(__file__)) + "/../../")
+    os.chdir(f"{os.path.dirname(os.path.realpath(__file__))}/../../")
 
     output_path: Final = f"base/Assets/locale/{sys.argv[1]}.json"
 
@@ -67,9 +64,11 @@ def main() -> None:
     matches: List[str] = []
     for folder in [os.path.join("armorpaint", "Sources"), os.path.join("armarlab", "Sources"), "Libraries", "base"]:
         for root, dirnames, filenames in os.walk(folder):
-            dirnames[:] = [d for d in dirnames]
-            for filename in fnmatch.filter(filenames, "*.hx"):
-                matches.append(os.path.join(root, filename))
+            dirnames[:] = list(dirnames)
+            matches.extend(
+                os.path.join(root, filename)
+                for filename in fnmatch.filter(filenames, "*.hx")
+            )
     matches.sort()
 
     template_data: Dict[str, str] = {}
@@ -91,14 +90,12 @@ def main() -> None:
             }
             # Merge existing data with the generated template data (so we keep
             # existing translations).
-            template_data = {**template_data, **existing_data_no_obsolete}
+            template_data |= existing_data_no_obsolete
 
-        with open(output_path, "w", encoding="utf8") as f:
-            json.dump(template_data, f, ensure_ascii=False, indent=4)
     else:
         print(f'Creating new translation template at "{output_path}"...')
-        with open(output_path, "w", encoding="utf8") as f:
-            json.dump(template_data, f, ensure_ascii=False, indent=4)
+    with open(output_path, "w", encoding="utf8") as f:
+        json.dump(template_data, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == "__main__":
